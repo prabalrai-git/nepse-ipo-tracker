@@ -1,18 +1,20 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { TabKey } from '../types'
 
-defineProps<{
+const props = defineProps<{
   modelValue: TabKey
   counts: Record<TabKey, number>
+  allLabel: string
 }>()
 defineEmits<{ 'update:modelValue': [TabKey] }>()
 
-const tabs: { key: TabKey; label: string }[] = [
-  { key: 'eligible', label: 'All Eligible' },
+const tabs = computed<{ key: TabKey; label: string }[]>(() => [
+  { key: 'eligible', label: props.allLabel },
   { key: 'foreign', label: 'Foreign 10%' },
   { key: 'general', label: 'General Public' },
   { key: 'upcoming', label: 'Upcoming' },
-]
+])
 </script>
 
 <template>

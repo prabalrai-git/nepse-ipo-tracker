@@ -20,7 +20,7 @@ export default defineConfig({
       manifest: {
         id: base,
         name: 'NEPSE IPO Alert',
-        short_name: 'IPO Alert',
+        short_name: 'NEPSE IPO',
         description: 'Open and upcoming NEPSE IPOs for foreign-employment and general-public quotas, with live JST/NPT countdowns.',
         lang: 'en',
         start_url: base,
