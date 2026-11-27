@@ -104,7 +104,7 @@ const hasActiveInView = computed(() => visible.value.some((i) => liveStatus(i, n
           </button>
         </div>
       </div>
-      <div class="mt-3">
+      <div class="mt-1">
         <FilterTabs v-model="tab" :counts="counts" />
       </div>
     </header>
