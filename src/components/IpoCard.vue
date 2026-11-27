@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import type { Ipo } from '../types'
 import CountdownTimer from './CountdownTimer.vue'
 import { useNow } from '../composables/useNow'
-import {
-  MERO_SHARE_URL, NPT, JST, openAt, closeAt, liveStatus, fmtMoment, fmtDay,
-  fmtNumber, fmtRs, quotaLabel, detailsText, copyText,
-} from '../utils/time'
+import { NPT, JST, openAt, closeAt, liveStatus, fmtMoment, fmtDay, fmtNumber, fmtRs, quotaLabel } from '../utils/time'
 
 const props = defineProps<{ ipo: Ipo }>()
 const now = useNow()
@@ -32,14 +29,6 @@ const statusClass = computed(() =>
       ? 'bg-indigo-500/20 text-indigo-200 ring-1 ring-indigo-400/40'
       : 'bg-slate-700 text-slate-400',
 )
-
-const copied = ref<'idle' | 'ok' | 'fail'>('idle')
-let resetTimer: number | undefined
-async function copyDetails(): Promise<void> {
-  copied.value = (await copyText(detailsText(props.ipo, now.value))) ? 'ok' : 'fail'
-  window.clearTimeout(resetTimer)
-  resetTimer = window.setTimeout(() => { copied.value = 'idle' }, 2000)
-}
 </script>
 
 <template>
@@ -101,32 +90,5 @@ async function copyDetails(): Promise<void> {
         <p class="flex items-center justify-between"><span>🇯🇵 Japan time</span><span class="font-medium tabular-nums text-white">{{ fmtMoment(closeAt(ipo), JST) }}</span></p>
       </div>
     </div>
-
-    <div class="mt-4 flex flex-col gap-2 sm:flex-row">
-      <a
-        v-if="status === 'Open'"
-        :href="MERO_SHARE_URL"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="flex-1 rounded-xl bg-emerald-500 px-4 py-3 text-center text-base font-bold text-emerald-950 active:bg-emerald-400"
-      >Apply on MeroShare ↗</a>
-      <button
-        type="button"
-        class="flex-1 rounded-xl bg-slate-800 px-4 py-3 text-center text-base font-semibold text-white ring-1 ring-slate-600 active:bg-slate-700"
-        @click="copyDetails"
-      >
-        <span v-if="copied === 'ok'">Copied ✓</span>
-        <span v-else-if="copied === 'fail'">Copy failed</span>
-        <span v-else>Copy Details</span>
-      </button>
-    </div>
-
-    <a
-      v-if="ipo.announcement_url"
-      :href="ipo.announcement_url"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="mt-3 inline-block text-sm text-sky-300 underline underline-offset-2"
-    >Read offer letter ↗</a>
   </article>
 </template>

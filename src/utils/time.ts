@@ -69,24 +69,6 @@ export function ageHours(iso: string | null, now: number): number | null {
   return Number.isNaN(t) ? null : (now - t) / 3_600_000
 }
 
-/** Plain-text summary for the "Copy Details" button. */
-export function detailsText(i: Ipo, now: number): string {
-  const status = liveStatus(i, now)
-  const lines = [
-    `${i.symbol} - ${i.company_name}`,
-    `Quota: ${quotaLabel(i.quota_type)}`,
-    `Status: ${status}`,
-    `Price: ${fmtRs(i.price)} per unit | Units: ${fmtNumber(i.units)}`,
-    `Opens: ${fmtDay(i.open_date)} | Closes: ${fmtDay(i.close_date)} (Nepal dates)`,
-    `Closes (approx.): ${fmtMoment(closeAt(i), NPT)} NPT / ${fmtMoment(closeAt(i), JST)} JST`,
-  ]
-  if (i.issue_manager) lines.push(`Issue manager: ${i.issue_manager}`)
-  if (i.sector) lines.push(`Sector: ${i.sector}`)
-  lines.push(`Apply: ${MERO_SHARE_URL}`)
-  if (i.announcement_url) lines.push(`Offer letter: ${i.announcement_url}`)
-  return lines.join('\n')
-}
-
 export async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text)

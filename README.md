@@ -40,8 +40,8 @@ GitHub Actions (09:15 and 18:15 JST)
 | Tracker not updating | The scraper has failed for 30+ hours | high |
 
 Every alert has the same layout: a title (`IPO OPEN: KPL`), the company name and quota type
-(Foreign Employment or General Public), and one **View details** button that opens the dashboard, where the
-Apply button and all the scraped details are. Tapping the notification itself opens the dashboard too. The
+(Foreign Employment or General Public), and one **View details** button that opens the dashboard, where all
+the scraped details are. (To apply, open MeroShare yourself at <https://cdsc.com.np>.) Tapping the notification itself opens the dashboard too. The
 workflow sets the dashboard address from your repository automatically (`DASHBOARD_URL`); for local runs you can put
 `DASHBOARD_URL=https://<you>.github.io/nepse-ipo-tracker/` in `.env`.
 
