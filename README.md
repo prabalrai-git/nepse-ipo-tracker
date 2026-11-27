@@ -107,7 +107,7 @@ Then open **Actions → Deploy PWA to GitHub Pages → Run workflow**. When it f
    [Android](https://play.google.com/store/apps/details?id=io.heckel.ntfy)
 2. In ntfy tap **+**, paste your topic **name**, keep the server as `ntfy.sh`, tap **Subscribe**, allow
    notifications.
-3. Open your app, tap the 🔔 button, paste the topic once, and tap **Send test notification**. Your phone should
+3. Optional: open your app, tap the bell, expand **Enable the test button**, paste the topic once, and tap **Send test notification**. Your phone should
    buzz within seconds. (The topic is stored only in that browser, never uploaded to GitHub.)
 
 ### 6. Run the first scrape

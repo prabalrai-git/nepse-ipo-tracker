@@ -5,7 +5,6 @@ import FilterTabs from './components/FilterTabs.vue'
 import IpoCard from './components/IpoCard.vue'
 import PwaStatus from './components/PwaStatus.vue'
 import SetupModal from './components/SetupModal.vue'
-import { useNtfyTopic } from './composables/useNtfyTopic'
 import { useIpos } from './composables/useIpos'
 import { useNow } from './composables/useNow'
 import { ageHours, closeAt, fmtMoment, fmtTime, JST, liveStatus, MERO_SHARE_URL, NPT, openAt } from './utils/time'
@@ -13,7 +12,6 @@ import { ageHours, closeAt, fmtMoment, fmtTime, JST, liveStatus, MERO_SHARE_URL,
 const STALE_AFTER_HOURS = 30 // scraper runs twice a day; beyond this something is wrong
 
 const { feed, ipos, loading, error, fromCache, reload } = useIpos()
-const { configured } = useNtfyTopic()
 const setupOpen = ref(false)
 const now = useNow()
 
@@ -76,11 +74,10 @@ const hasActiveInView = computed(() => visible.value.some((i) => liveStatus(i, n
         <button
           type="button"
           class="relative flex items-center justify-center border-r border-ink active:bg-paper-deep"
-          aria-label="Phone alert setup"
+          aria-label="Alert settings"
           @click="setupOpen = true"
         >
           <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
-          <span v-if="!configured" class="absolute right-3 top-3 h-2.5 w-2.5 border border-ink bg-brand" aria-hidden="true"></span>
         </button>
         <h1 class="flex items-center justify-center font-display text-xl font-bold uppercase tracking-[0.12em]">IPO Alert</h1>
         <button
@@ -103,10 +100,9 @@ const hasActiveInView = computed(() => visible.value.some((i) => liveStatus(i, n
         type="button"
         class="mt-4 w-full border border-ink bg-paper px-4 py-3 text-sm font-bold active:bg-paper-deep"
         @click="setupOpen = true"
-      >{{ configured ? 'Alert settings' : 'Set up phone alerts' }}</button>
-      <p class="mt-3 text-xs underline underline-offset-2">
-        <template v-if="updatedAt">Updated {{ fmtTime(updatedAt, JST) }} JST · {{ fmtTime(updatedAt, NPT) }} NPT</template>
-        <template v-else>Waiting for first data…</template>
+      >Alert settings</button>
+      <p v-if="updatedAt" class="mt-3 text-xs underline underline-offset-2">
+        Updated {{ fmtTime(updatedAt, JST) }} JST · {{ fmtTime(updatedAt, NPT) }} NPT
       </p>
     </section>
 
