@@ -41,11 +41,11 @@ export function useNtfyTopic() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         topic: topic.value,
-        title: 'IPO ALERT: test',
-        message: 'NEPSE IPO Alert\nIf you can read this, alerts are working.',
+        title: 'NEPSE · TEST',
+        message: 'If you can read this, alerts are working.',
         priority: 4,
-        tags: ['white_check_mark'],
         click: dashboard,
+        icon: `${dashboard}pwa-192x192.png`,
         actions: [{ action: 'view', label: 'View details', url: dashboard }],
       }),
     })

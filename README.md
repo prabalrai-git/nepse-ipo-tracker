@@ -39,9 +39,9 @@ GitHub Actions (09:15 and 18:15 JST)
 | Unverified notice | MeroLagani lists an eligible IPO that ShareSansar does not | normal |
 | Tracker not updating | The scraper has failed for 30+ hours | high |
 
-Every alert has the same layout: a title (`IPO OPEN: KPL`), the company name and quota type
-(Foreign Employment or General Public), and one **View details** button that opens the dashboard, where all
-the scraped details are. (To apply, open MeroShare yourself at <https://cdsc.com.np>.) Tapping the notification itself opens the dashboard too. The
+Every alert has the same layout: a title (`NEPSE · OPEN NOW: KPL`), the company name and quota type
+(Foreign 10% quota or General Public quota), and one **View details** button that opens the dashboard, where all
+the scraped details are. (To apply, open MeroShare yourself at <https://cdsc.com.np>.) Tapping the notification itself opens the dashboard too. On Android the app icon shows next to the alert. The
 workflow sets the dashboard address from your repository automatically (`DASHBOARD_URL`); for local runs you can put
 `DASHBOARD_URL=https://<you>.github.io/nepse-ipo-tracker/` in `.env`.
 

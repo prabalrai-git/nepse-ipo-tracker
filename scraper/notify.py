@@ -21,7 +21,7 @@ Usage:
 The topic is read from the NTFY_TOPIC env var (or a git-ignored .env file) and is
 never printed or logged, because anyone who knows it can read or forge your alerts.
 
-Every alert looks the same: a title ("IPO OPEN: KPL"), the company name and quota type,
+Every alert looks the same: a title ("NEPSE · OPEN NOW: KPL"), the company name and quota type,
 and ONE button, "View details", that opens the dashboard (DASHBOARD_URL). Tapping the
 notification itself opens the dashboard too. Without DASHBOARD_URL the tap falls back to
 MeroShare and no button is shown.
@@ -52,8 +52,8 @@ STALE_HOURS = 30  # twice-daily schedule + GitHub scheduling delay + one retry m
 PRUNE_DAYS = 180
 
 TYPE_LABEL = {
-    "FOREIGN_EMPLOYMENT": "Foreign Employment",
-    "GENERAL_PUBLIC": "General Public",
+    "FOREIGN_EMPLOYMENT": "Foreign 10% quota",
+    "GENERAL_PUBLIC": "General Public quota",
 }
 PRIORITY = {"default": 3, "high": 4}
 
@@ -100,6 +100,7 @@ class NtfyClient:
         priority: int = 3,
         tags: list[str] | None = None,
         click: str | None = None,
+        icon: str | None = None,
         actions: list[dict[str, Any]] | None = None,
         tries: int = 4,
     ) -> None:
@@ -114,6 +115,8 @@ class NtfyClient:
         }
         if click:
             payload["click"] = click
+        if icon:
+            payload["icon"] = icon
         if actions:
             payload["actions"] = actions
 
@@ -165,6 +168,14 @@ def dashboard_url() -> str | None:
 
 def tap_url() -> str:
     return dashboard_url() or CLICK_URL
+
+
+def icon_url() -> str | None:
+    """The app icon, shown next to the alert on Android. It is served by the dashboard site."""
+    base = dashboard_url()
+    if not base:
+        return None
+    return base.rstrip("/") + "/pwa-192x192.png"
 
 
 # ------------------------------------------------------------------------- state
@@ -236,22 +247,22 @@ def plan_events(data: dict[str, Any], state: dict[str, Any]) -> list[Event]:
         if ipo["status"] == "Upcoming":
             if "announced" not in rec:
                 events.append(Event(
-                    ipo["id"], "announced", f"IPO ANNOUNCED: {sym}", _describe(ipo),
-                    PRIORITY["default"], ["calendar"], _actions(), ["announced"],
+                    ipo["id"], "announced", f"NEPSE · NEW IPO: {sym}", _describe(ipo),
+                    PRIORITY["default"], [], _actions(), ["announced"],
                 ))
         elif ipo["status"] == "Open":
             if "opened" not in rec:
                 # Never send "opened" and "closing" back to back for the same issue.
-                title = f"LAST DAY: {sym}" if last_day else f"IPO OPEN: {sym}"
+                title = f"NEPSE · LAST DAY: {sym}" if last_day else f"NEPSE · OPEN NOW: {sym}"
                 marks = ["announced", "opened"] + (["closing"] if last_day else [])
                 events.append(Event(
                     ipo["id"], "opened", title, _describe(ipo),
-                    PRIORITY["high"], ["rotating_light"], _actions(), marks,
+                    PRIORITY["high"], [], _actions(), marks,
                 ))
             elif last_day and "closing" not in rec:
                 events.append(Event(
-                    ipo["id"], "closing", f"LAST DAY: {sym}", _describe(ipo),
-                    PRIORITY["high"], ["alarm_clock"], _actions(), ["closing"],
+                    ipo["id"], "closing", f"NEPSE · LAST DAY: {sym}", _describe(ipo),
+                    PRIORITY["high"], [], _actions(), ["closing"],
                 ))
 
     for item in data.get("crosscheck", {}).get("missing_from_primary", []):
@@ -260,10 +271,10 @@ def plan_events(data: dict[str, Any], state: dict[str, Any]) -> list[Event]:
         if "flagged" in state["notified"].get(ipo_id, {}):
             continue
         events.append(Event(
-            ipo_id, "flagged", f"UNVERIFIED IPO: {item['company_name']}",
+            ipo_id, "flagged", f"NEPSE · UNVERIFIED: {item['company_name']}",
             f"{item['text']}\n\nSeen in a second source but not yet in the main data feed. "
             "Check MeroShare directly.",
-            PRIORITY["default"], ["warning"], _actions(), ["flagged"],
+            PRIORITY["default"], [], _actions(), ["flagged"],
         ))
     return events
 
@@ -292,7 +303,7 @@ def deliver(
         assert client is not None
         try:
             client.send(ev.title, ev.message, priority=ev.priority, tags=ev.tags,
-                        click=tap_url(), actions=ev.actions)
+                        click=tap_url(), icon=icon_url(), actions=ev.actions)
         except NotifyError as exc:
             failures += 1
             log(f"FAILED to send {label}: {exc} (will retry next run)")
@@ -342,7 +353,7 @@ def report_failure(*, dry_run: bool = False) -> None:
     if state["stale_alerted"]:
         return
     age_txt = "a long time" if age_h == float("inf") else f"{age_h:.0f} hours"
-    title, body = "IPO tracker is not updating", (
+    title, body = "NEPSE · NOT UPDATING", (
         f"The scraper has failed and the data is {age_txt} old. New IPOs may be missed. "
         "Check the GitHub Actions run, and look at MeroShare directly."
     )
@@ -353,8 +364,8 @@ def report_failure(*, dry_run: bool = False) -> None:
     if client is None:
         return
     try:
-        client.send(title, body, priority=PRIORITY["high"], tags=["warning"],
-                    click=tap_url(), actions=_actions())
+        client.send(title, body, priority=PRIORITY["high"],
+                    click=tap_url(), icon=icon_url(), actions=_actions())
     except NotifyError as exc:
         log(f"FAILED to send health alert: {exc}")
         return
@@ -378,8 +389,8 @@ def main() -> int:
             log("NTFY_TOPIC is not set (export it or put it in .env).")
             return 1
         try:
-            client.send("NEPSE IPO Alert: test", "If you can read this, alerts are working.",
-                        priority=PRIORITY["high"], tags=["white_check_mark"], click=tap_url(),
+            client.send("NEPSE · TEST", "If you can read this, alerts are working.",
+                        priority=PRIORITY["high"], click=tap_url(), icon=icon_url(),
                         actions=_actions())
         except NotifyError as exc:
             log(f"Test failed: {exc}")
