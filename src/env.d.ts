@@ -6,3 +6,4 @@ declare module '*.vue' {
   const component: DefineComponent<object, object, unknown>
   export default component
 }
+/// <reference types="vite-plugin-pwa/vue" />

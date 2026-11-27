@@ -46,20 +46,20 @@ class Lifecycle(unittest.TestCase):
     def test_full_lifecycle_sends_each_event_exactly_once(self):
         # day 0: announced
         c, _ = self.cycle(data("2026-11-27", ipo("1:8", "AAA", "Upcoming", "2026-11-30", "2026-12-03")))
-        self.assertEqual([t for t, _ in c.sent], ["IPO announced: AAA (Foreign Employment)"])
+        self.assertEqual([t for t, _ in c.sent], ["IPO ANNOUNCED: AAA"])
         # same data again -> nothing
         c, _ = self.cycle(data("2026-11-27", ipo("1:8", "AAA", "Upcoming", "2026-11-30", "2026-12-03")))
         self.assertEqual(c.sent, [])
         # opens -> high priority, once
         opened = data("2026-11-30", ipo("1:8", "AAA", "Open", "2026-11-30", "2026-12-03"))
         c, _ = self.cycle(opened)
-        self.assertEqual(c.sent, [("IPO OPEN now: AAA (Foreign Employment)", 4)])
+        self.assertEqual(c.sent, [("IPO OPEN: AAA", 4)])
         c, _ = self.cycle(opened)
         self.assertEqual(c.sent, [])
         # closing day -> one reminder, then silence
         last = data("2026-12-03", ipo("1:8", "AAA", "Open", "2026-11-30", "2026-12-03"))
         c, _ = self.cycle(last)
-        self.assertEqual(c.sent, [("LAST DAY to apply: AAA (Foreign Employment)", 4)])
+        self.assertEqual(c.sent, [("LAST DAY: AAA", 4)])
         c, _ = self.cycle(last)
         self.assertEqual(c.sent, [])
         # closed -> never alerts
@@ -70,14 +70,14 @@ class Lifecycle(unittest.TestCase):
         d = data("2026-11-27", ipo("2:8", "KPL", "Open", "2026-11-26", "2026-12-01"))
         c, _ = self.cycle(d)
         self.assertEqual(len(c.sent), 1)
-        self.assertTrue(c.sent[0][0].startswith("IPO OPEN now"))
+        self.assertTrue(c.sent[0][0].startswith("IPO OPEN:"))
         c, _ = self.cycle(d)
         self.assertEqual(c.sent, [])
 
     def test_first_seen_on_last_day_sends_single_message(self):
         d = data("2026-12-01", ipo("2:8", "KPL", "Open", "2026-11-26", "2026-12-01"))
         c, _ = self.cycle(d)
-        self.assertEqual([t for t, _ in c.sent], ["LAST DAY to apply: KPL (Foreign Employment)"])
+        self.assertEqual([t for t, _ in c.sent], ["LAST DAY: KPL"])
         c, _ = self.cycle(d)
         self.assertEqual(c.sent, [])
 
@@ -125,6 +125,43 @@ class Lifecycle(unittest.TestCase):
         p = self.tmp / "seed.json"
         p.write_text('{"notified": []}')
         self.assertEqual(notify.load_state(p), {"notified": {}, "stale_alerted": False})
+
+
+class Layout(unittest.TestCase):
+    """The alert layout the user asked for: title, company, quota type, one button."""
+
+    def _event(self, quota, status="Open"):
+        d = data("2026-11-27", ipo("9:8", "KPL", status, "2026-11-26", "2026-12-01", quota))
+        d["ipos"][0]["company_name"] = "Kantipur Pharmaceuticals Lab Limited"
+        return notify.plan_events(d, {"notified": {}, "stale_alerted": False})[0]
+
+    def test_foreign_body_is_company_then_type_only(self):
+        with mock.patch.dict("os.environ", {"DASHBOARD_URL": "https://me.github.io/nepse-ipo-tracker/"}):
+            ev = self._event("FOREIGN_EMPLOYMENT")
+        self.assertEqual(ev.title, "IPO OPEN: KPL")
+        self.assertEqual(ev.message, "Kantipur Pharmaceuticals Lab Limited\nForeign Employment")
+
+    def test_general_body(self):
+        ev = self._event("GENERAL_PUBLIC", "Upcoming")
+        self.assertEqual(ev.title, "IPO ANNOUNCED: KPL")
+        self.assertEqual(ev.message, "Kantipur Pharmaceuticals Lab Limited\nGeneral Public")
+
+    def test_exactly_one_button_to_the_dashboard(self):
+        with mock.patch.dict("os.environ", {"DASHBOARD_URL": "https://me.github.io/nepse-ipo-tracker/"}):
+            ev = self._event("FOREIGN_EMPLOYMENT")
+            self.assertEqual(ev.actions, [{"action": "view", "label": "View details",
+                                           "url": "https://me.github.io/nepse-ipo-tracker/"}])
+            self.assertEqual(notify.tap_url(), "https://me.github.io/nepse-ipo-tracker/")
+
+    def test_without_dashboard_url_no_button_and_tap_falls_back_to_meroshare(self):
+        with mock.patch.dict("os.environ", {"DASHBOARD_URL": ""}), mock.patch("notify.load_dotenv"):
+            ev = self._event("FOREIGN_EMPLOYMENT")
+            self.assertEqual(ev.actions, [])
+            self.assertEqual(notify.tap_url(), notify.CLICK_URL)
+
+    def test_rejects_non_http_dashboard_url(self):
+        with mock.patch.dict("os.environ", {"DASHBOARD_URL": "javascript:alert(1)"}), mock.patch("notify.load_dotenv"):
+            self.assertIsNone(notify.dashboard_url())
 
 
 class ClientBehaviour(unittest.TestCase):

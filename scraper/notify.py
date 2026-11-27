@@ -20,6 +20,11 @@ Usage:
   python scraper/notify.py --test             # send one test notification
 The topic is read from the NTFY_TOPIC env var (or a git-ignored .env file) and is
 never printed or logged, because anyone who knows it can read or forge your alerts.
+
+Every alert looks the same: a title ("IPO OPEN: KPL"), the company name and quota type,
+and ONE button, "View details", that opens the dashboard (DASHBOARD_URL). Tapping the
+notification itself opens the dashboard too. Without DASHBOARD_URL the tap falls back to
+MeroShare and no button is shown.
 """
 from __future__ import annotations
 
@@ -46,8 +51,8 @@ DEFAULT_SERVER = "https://ntfy.sh"
 STALE_HOURS = 30  # twice-daily schedule + GitHub scheduling delay + one retry margin
 PRUNE_DAYS = 180
 
-QUOTA_LABEL = {
-    "FOREIGN_EMPLOYMENT": "Foreign Employment (10% quota)",
+TYPE_LABEL = {
+    "FOREIGN_EMPLOYMENT": "Foreign Employment",
     "GENERAL_PUBLIC": "General Public",
 }
 PRIORITY = {"default": 3, "high": 4}
@@ -151,6 +156,17 @@ def get_client() -> NtfyClient | None:
     return NtfyClient(topic, os.environ.get("NTFY_SERVER", DEFAULT_SERVER))
 
 
+def dashboard_url() -> str | None:
+    """Where the alert's button / tap should go: the PWA that shows the scraped details."""
+    load_dotenv()
+    url = os.environ.get("DASHBOARD_URL", "").strip()
+    return url if url.startswith(("https://", "http://")) else None
+
+
+def tap_url() -> str:
+    return dashboard_url() or CLICK_URL
+
+
 # ------------------------------------------------------------------------- state
 def load_state(path: Path = STATE_PATH) -> dict[str, Any]:
     try:
@@ -197,27 +213,13 @@ class Event:
     marks: list[str] = field(default_factory=list)  # state kinds to record once delivered
 
 
-def _d(iso: str) -> str:
-    return date.fromisoformat(iso).strftime("%a %d %b")
-
-
 def _describe(ipo: dict[str, Any]) -> str:
-    bits = [QUOTA_LABEL.get(ipo["quota_type"], ipo["quota_type"])]
-    if ipo.get("units"):
-        bits.append(f"{ipo['units']:,} units")
-    if ipo.get("price"):
-        bits.append(f"Rs {ipo['price']:g}/unit")
-    lines = [ipo["company_name"], " | ".join(bits), f"Opens {_d(ipo['open_date'])}, closes {_d(ipo['close_date'])} (Nepal dates)"]
-    if ipo.get("issue_manager"):
-        lines.append(f"Issue manager: {ipo['issue_manager']}")
-    return "\n".join(lines)
+    return f"{ipo['company_name']}\n{TYPE_LABEL.get(ipo['quota_type'], ipo['quota_type'])}"
 
 
-def _actions(ipo: dict[str, Any]) -> list[dict[str, Any]]:
-    out = [{"action": "view", "label": "Open MeroShare", "url": CLICK_URL}]
-    if ipo.get("announcement_url"):
-        out.append({"action": "view", "label": "Offer letter", "url": ipo["announcement_url"]})
-    return out
+def _actions() -> list[dict[str, Any]]:
+    url = dashboard_url()
+    return [{"action": "view", "label": "View details", "url": url}] if url else []
 
 
 def plan_events(data: dict[str, Any], state: dict[str, Any]) -> list[Event]:
@@ -228,29 +230,28 @@ def plan_events(data: dict[str, Any], state: dict[str, Any]) -> list[Event]:
         if not ipo.get("eligible") or ipo["status"] == "Closed":
             continue
         rec = state["notified"].get(ipo["id"], {})
-        quota = "Foreign Employment" if ipo["quota_type"] == "FOREIGN_EMPLOYMENT" else "General Public"
-        who = f"{ipo['symbol']} ({quota})"
+        sym = ipo["symbol"]
         last_day = date.fromisoformat(ipo["close_date"]) == today
 
         if ipo["status"] == "Upcoming":
             if "announced" not in rec:
                 events.append(Event(
-                    ipo["id"], "announced", f"IPO announced: {who}", _describe(ipo),
-                    PRIORITY["default"], ["calendar"], _actions(ipo), ["announced"],
+                    ipo["id"], "announced", f"IPO ANNOUNCED: {sym}", _describe(ipo),
+                    PRIORITY["default"], ["calendar"], _actions(), ["announced"],
                 ))
         elif ipo["status"] == "Open":
             if "opened" not in rec:
                 # Never send "opened" and "closing" back to back for the same issue.
-                title = f"LAST DAY to apply: {who}" if last_day else f"IPO OPEN now: {who}"
+                title = f"LAST DAY: {sym}" if last_day else f"IPO OPEN: {sym}"
                 marks = ["announced", "opened"] + (["closing"] if last_day else [])
                 events.append(Event(
                     ipo["id"], "opened", title, _describe(ipo),
-                    PRIORITY["high"], ["rotating_light"], _actions(ipo), marks,
+                    PRIORITY["high"], ["rotating_light"], _actions(), marks,
                 ))
             elif last_day and "closing" not in rec:
                 events.append(Event(
-                    ipo["id"], "closing", f"LAST DAY to apply: {who}", _describe(ipo),
-                    PRIORITY["high"], ["alarm_clock"], _actions(ipo), ["closing"],
+                    ipo["id"], "closing", f"LAST DAY: {sym}", _describe(ipo),
+                    PRIORITY["high"], ["alarm_clock"], _actions(), ["closing"],
                 ))
 
     for item in data.get("crosscheck", {}).get("missing_from_primary", []):
@@ -259,13 +260,10 @@ def plan_events(data: dict[str, Any], state: dict[str, Any]) -> list[Event]:
         if "flagged" in state["notified"].get(ipo_id, {}):
             continue
         events.append(Event(
-            ipo_id, "flagged", f"UNVERIFIED IPO notice: {item['company_name']}",
+            ipo_id, "flagged", f"UNVERIFIED IPO: {item['company_name']}",
             f"{item['text']}\n\nSeen in a second source but not yet in the main data feed. "
             "Check MeroShare directly.",
-            PRIORITY["default"], ["warning"],
-            [{"action": "view", "label": "Open MeroShare", "url": CLICK_URL}]
-            + ([{"action": "view", "label": "Notice", "url": item["url"]}] if item.get("url") else []),
-            ["flagged"],
+            PRIORITY["default"], ["warning"], _actions(), ["flagged"],
         ))
     return events
 
@@ -294,7 +292,7 @@ def deliver(
         assert client is not None
         try:
             client.send(ev.title, ev.message, priority=ev.priority, tags=ev.tags,
-                        click=CLICK_URL, actions=ev.actions)
+                        click=tap_url(), actions=ev.actions)
         except NotifyError as exc:
             failures += 1
             log(f"FAILED to send {label}: {exc} (will retry next run)")
@@ -355,7 +353,8 @@ def report_failure(*, dry_run: bool = False) -> None:
     if client is None:
         return
     try:
-        client.send(title, body, priority=PRIORITY["high"], tags=["warning"], click=CLICK_URL)
+        client.send(title, body, priority=PRIORITY["high"], tags=["warning"],
+                    click=tap_url(), actions=_actions())
     except NotifyError as exc:
         log(f"FAILED to send health alert: {exc}")
         return
@@ -380,7 +379,8 @@ def main() -> int:
             return 1
         try:
             client.send("NEPSE IPO Alert: test", "If you can read this, alerts are working.",
-                        priority=PRIORITY["high"], tags=["white_check_mark"], click=CLICK_URL)
+                        priority=PRIORITY["high"], tags=["white_check_mark"], click=tap_url(),
+                        actions=_actions())
         except NotifyError as exc:
             log(f"Test failed: {exc}")
             return 1
