@@ -9,86 +9,61 @@ const props = defineProps<{ ipo: Ipo }>()
 const now = useNow()
 
 const status = computed(() => liveStatus(props.ipo, now.value))
-const isForeign = computed(() => props.ipo.quota_type === 'FOREIGN_EMPLOYMENT')
 const issueSize = computed(() =>
   props.ipo.units != null && props.ipo.price != null ? props.ipo.units * props.ipo.price : null,
 )
 const target = computed(() => (status.value === 'Upcoming' ? openAt(props.ipo) : closeAt(props.ipo)))
 
-const badgeClass = computed(() =>
-  isForeign.value
-    ? 'bg-amber-400 text-amber-950'
-    : props.ipo.quota_type === 'GENERAL_PUBLIC'
-      ? 'bg-sky-400/20 text-sky-200 ring-1 ring-sky-400/40'
-      : 'bg-slate-700 text-slate-200',
-)
 const statusClass = computed(() =>
   status.value === 'Open'
-    ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/40'
+    ? 'bg-brand text-ink'
     : status.value === 'Upcoming'
-      ? 'bg-indigo-500/20 text-indigo-200 ring-1 ring-indigo-400/40'
-      : 'bg-slate-700 text-slate-400',
+      ? 'bg-sun text-ink'
+      : 'bg-paper text-ink-soft',
 )
+const rows = computed(() => [
+  ['Price / unit', fmtRs(props.ipo.price)],
+  ['Total units', fmtNumber(props.ipo.units)],
+  ['Issue size', fmtRs(issueSize.value)],
+  ['Sector', props.ipo.sector ?? '—'],
+  ['Manager', props.ipo.issue_manager ?? '—'],
+])
 </script>
 
 <template>
-  <article
-    class="rounded-2xl bg-slate-900 p-4 ring-1"
-    :class="[
-      isForeign ? 'ring-amber-400/50' : 'ring-slate-700',
-      status === 'Closed' ? 'opacity-60' : '',
-    ]"
-  >
-    <header class="flex items-start justify-between gap-3">
+  <article class="border border-ink bg-paper" :class="status === 'Closed' ? 'opacity-60' : ''">
+    <header class="flex items-start justify-between gap-3 border-b border-ink p-4">
       <div class="min-w-0">
-        <h2 class="text-2xl font-bold tracking-tight text-white">{{ ipo.symbol }}</h2>
-        <p class="text-sm leading-snug text-slate-300">{{ ipo.company_name }}</p>
+        <h2 class="font-display text-2xl font-bold leading-tight">{{ ipo.symbol }}</h2>
+        <p class="mt-0.5 text-xs leading-snug text-ink-soft">{{ ipo.company_name }}</p>
       </div>
       <div class="flex shrink-0 flex-col items-end gap-1.5">
-        <span class="rounded-full px-2.5 py-1 text-xs font-semibold" :class="statusClass">{{ status }}</span>
-        <span class="rounded-full px-2.5 py-1 text-xs font-semibold" :class="badgeClass">{{ quotaLabel(ipo.quota_type) }}</span>
+        <span class="border border-ink px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider" :class="statusClass">{{ status }}</span>
+        <span class="border border-ink px-2 py-0.5 text-[11px] font-bold" :class="ipo.quota_type === 'FOREIGN_EMPLOYMENT' ? 'bg-ink text-paper' : 'bg-paper'">{{ quotaLabel(ipo.quota_type) }}</span>
       </div>
     </header>
 
-    <div v-if="status !== 'Closed'" class="mt-4">
+    <div v-if="status !== 'Closed'" class="border-b border-ink p-4">
       <CountdownTimer :target="target" :mode="status === 'Upcoming' ? 'open' : 'close'" />
     </div>
 
-    <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-      <div>
-        <dt class="text-xs text-slate-400">Price per unit</dt>
-        <dd class="font-semibold text-white">{{ fmtRs(ipo.price) }}</dd>
-      </div>
-      <div>
-        <dt class="text-xs text-slate-400">Total units</dt>
-        <dd class="font-semibold text-white tabular-nums">{{ fmtNumber(ipo.units) }}</dd>
-      </div>
-      <div>
-        <dt class="text-xs text-slate-400">Issue size</dt>
-        <dd class="font-semibold text-white tabular-nums">{{ fmtRs(issueSize) }}</dd>
-      </div>
-      <div>
-        <dt class="text-xs text-slate-400">Sector</dt>
-        <dd class="font-semibold text-white">{{ ipo.sector ?? '—' }}</dd>
-      </div>
-      <div class="col-span-2">
-        <dt class="text-xs text-slate-400">Issue manager</dt>
-        <dd class="font-semibold text-white">{{ ipo.issue_manager ?? '—' }}</dd>
+    <dl class="px-4 pt-1 text-xs">
+      <div v-for="r in rows" :key="r[0]" class="flex items-baseline justify-between gap-4 py-1.5">
+        <dt class="shrink-0 text-ink-soft">{{ r[0] }}</dt>
+        <dd class="text-right font-bold tabular-nums">{{ r[1] }}</dd>
       </div>
     </dl>
 
-    <div class="mt-4 space-y-2 rounded-xl bg-slate-800/70 p-3 text-xs text-slate-300">
-      <p>
-        <span class="text-slate-400">Opens</span> {{ fmtDay(ipo.open_date) }}
-        <span class="mx-1 text-slate-600">|</span>
-        <span class="text-slate-400">Closes</span> {{ fmtDay(ipo.close_date) }}
-        <span class="text-slate-500">(Nepal dates)</span>
-      </p>
-      <div>
-        <p class="mb-1 font-semibold text-slate-200">{{ status === 'Closed' ? 'Closed' : 'Closes (approx.)' }}</p>
-        <p class="flex items-center justify-between"><span>🇳🇵 Nepal time</span><span class="font-medium tabular-nums text-white">{{ fmtMoment(closeAt(ipo), NPT) }}</span></p>
-        <p class="flex items-center justify-between"><span>🇯🇵 Japan time</span><span class="font-medium tabular-nums text-white">{{ fmtMoment(closeAt(ipo), JST) }}</span></p>
+    <div class="mx-4 mb-4 mt-2 border-t border-ink pt-3 text-xs">
+      <div class="flex items-baseline justify-between gap-4 py-1">
+        <span class="text-ink-soft">Opens</span><span class="font-bold">{{ fmtDay(ipo.open_date) }}</span>
       </div>
+      <div class="flex items-baseline justify-between gap-4 py-1">
+        <span class="text-ink-soft">Closes</span><span class="font-bold">{{ fmtDay(ipo.close_date) }}</span>
+      </div>
+      <p class="mb-1 mt-3 text-[11px] font-bold uppercase tracking-widest text-ink-soft">{{ status === 'Closed' ? 'Closed' : 'Closes (approx.)' }}</p>
+      <div class="flex items-baseline justify-between gap-4 py-1"><span>🇳🇵 Nepal time</span><span class="font-bold tabular-nums">{{ fmtMoment(closeAt(ipo), NPT) }}</span></div>
+      <div class="flex items-baseline justify-between gap-4 py-1"><span>🇯🇵 Japan time</span><span class="font-bold tabular-nums">{{ fmtMoment(closeAt(ipo), JST) }}</span></div>
     </div>
   </article>
 </template>

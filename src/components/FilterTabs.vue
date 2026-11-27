@@ -9,14 +9,14 @@ defineEmits<{ 'update:modelValue': [TabKey] }>()
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'eligible', label: 'All Eligible' },
-  { key: 'foreign', label: '🇯🇵 Foreign Quota (10%)' },
-  { key: 'general', label: '🇳🇵 General Public' },
+  { key: 'foreign', label: 'Foreign 10%' },
+  { key: 'general', label: 'General Public' },
   { key: 'upcoming', label: 'Upcoming' },
 ]
 </script>
 
 <template>
-  <div class="-mx-4 overflow-x-auto px-4 py-2.5" role="tablist" aria-label="Filter issues">
+  <div class="no-scrollbar overflow-x-auto border-b border-ink px-4 py-3" role="tablist" aria-label="Filter issues">
     <div class="flex w-max gap-2">
       <button
         v-for="t in tabs"
@@ -24,17 +24,12 @@ const tabs: { key: TabKey; label: string }[] = [
         role="tab"
         type="button"
         :aria-selected="modelValue === t.key"
-        class="flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium ring-1 transition-colors"
-        :class="modelValue === t.key
-          ? 'bg-white text-slate-900 ring-white'
-          : 'bg-slate-800 text-slate-300 ring-slate-700 active:bg-slate-700'"
+        class="flex items-center gap-2 whitespace-nowrap border border-ink px-3 py-1.5 text-xs font-bold"
+        :class="modelValue === t.key ? 'bg-brand text-ink' : 'bg-paper text-ink active:bg-paper-deep'"
         @click="$emit('update:modelValue', t.key)"
       >
         {{ t.label }}
-        <span
-          class="rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums"
-          :class="modelValue === t.key ? 'bg-slate-900 text-white' : 'bg-slate-700 text-slate-200'"
-        >{{ counts[t.key] }}</span>
+        <span class="tabular-nums" :class="modelValue === t.key ? 'text-ink' : 'text-ink-soft'">{{ counts[t.key] }}</span>
       </button>
     </div>
   </div>

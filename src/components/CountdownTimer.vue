@@ -20,20 +20,18 @@ const units = computed(() => [
 
 <template>
   <div>
-    <p class="mb-1 text-xs font-medium uppercase tracking-wide" :class="urgent ? 'text-rose-300' : 'text-slate-400'">
+    <p class="mb-1.5 text-[11px] font-bold uppercase tracking-widest" :class="urgent ? 'text-brand-deep' : 'text-ink-soft'">
       {{ mode === 'close' ? (urgent ? 'Closing soon' : 'Closes in') : 'Opens in' }}
     </p>
-    <div class="grid grid-cols-4 gap-2" role="timer" :aria-label="`${parts.d} days ${parts.h} hours ${parts.m} minutes remaining`">
+    <div class="grid grid-cols-4 border border-ink" role="timer" :aria-label="`${parts.d} days ${parts.h} hours ${parts.m} minutes remaining`">
       <div
-        v-for="u in units"
+        v-for="(u, i) in units"
         :key="u.k"
-        class="rounded-lg py-2 text-center"
-        :class="urgent ? 'bg-rose-500/15 ring-1 ring-rose-400/40' : 'bg-slate-800 ring-1 ring-slate-700'"
+        class="py-2 text-center"
+        :class="[urgent ? 'bg-brand' : 'bg-paper', i > 0 ? 'border-l border-ink' : '']"
       >
-        <div class="text-xl font-bold tabular-nums leading-none" :class="urgent ? 'text-rose-100' : 'text-white'">
-          {{ String(u.v).padStart(2, '0') }}
-        </div>
-        <div class="mt-1 text-[10px] uppercase tracking-wide text-slate-400">{{ u.label }}</div>
+        <div class="text-xl font-bold tabular-nums leading-none">{{ String(u.v).padStart(2, '0') }}</div>
+        <div class="mt-1 text-[10px] uppercase tracking-widest" :class="urgent ? 'text-ink' : 'text-ink-soft'">{{ u.label }}</div>
       </div>
     </div>
   </div>

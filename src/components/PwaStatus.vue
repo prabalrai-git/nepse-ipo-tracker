@@ -31,14 +31,14 @@ watch(offlineReady, (v) => {
 
 <template>
   <div class="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex flex-col items-center gap-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-    <div v-if="needRefresh" class="pointer-events-auto flex w-full max-w-xl items-center justify-between gap-3 rounded-xl bg-sky-500 px-4 py-3 text-sm font-medium text-sky-950 shadow-lg" role="status">
+    <div v-if="needRefresh" class="pointer-events-auto flex w-full max-w-xl items-center justify-between gap-3 border border-ink bg-sun px-4 py-3 text-sm font-bold" role="status">
       <span>A new version is available.</span>
-      <button type="button" class="rounded-lg bg-sky-950 px-3 py-1.5 font-semibold text-sky-100" @click="updateServiceWorker(true)">Reload</button>
+      <button type="button" class="border border-ink bg-ink px-3 py-1.5 font-bold text-paper" @click="updateServiceWorker(true)">Reload</button>
     </div>
-    <div v-else-if="readyToast" class="pointer-events-auto rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 shadow-lg" role="status">
+    <div v-else-if="readyToast" class="pointer-events-auto border border-ink bg-brand px-4 py-2 text-sm font-bold" role="status">
       Ready to work offline
     </div>
-    <div v-if="!online" class="pointer-events-auto rounded-full bg-slate-700 px-4 py-2 text-sm font-medium text-slate-100 shadow-lg ring-1 ring-slate-500" role="status">
+    <div v-if="!online" class="pointer-events-auto border border-ink bg-ink px-4 py-2 text-sm font-bold text-paper" role="status">
       You're offline. Showing saved data.
     </div>
   </div>

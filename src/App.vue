@@ -70,72 +70,63 @@ const hasActiveInView = computed(() => visible.value.some((i) => liveStatus(i, n
 </script>
 
 <template>
-  <div class="mx-auto min-h-screen max-w-xl pb-16">
-    <header class="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/90 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur">
-      <div class="flex items-center justify-between gap-3">
-        <div>
-          <h1 class="text-lg font-bold text-white">NEPSE IPO Alert</h1>
-          <p class="text-xs text-slate-400">
-            <template v-if="updatedAt">
-              Updated {{ fmtTime(updatedAt, JST) }} JST · {{ fmtTime(updatedAt, NPT) }} NPT
-            </template>
-            <template v-else>Waiting for first data…</template>
-          </p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            class="relative rounded-full bg-slate-800 px-3 py-2 text-sm font-medium text-slate-200 ring-1 ring-slate-700 active:bg-slate-700"
-            aria-label="Phone alert setup"
-            @click="setupOpen = true"
-          >
-            🔔
-            <span v-if="!configured" class="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-amber-400 ring-2 ring-slate-950" aria-hidden="true"></span>
-          </button>
-          <button
-            type="button"
-            class="rounded-full bg-slate-800 px-3 py-2 text-sm font-medium text-slate-200 ring-1 ring-slate-700 active:bg-slate-700 disabled:opacity-50"
-            :disabled="loading"
-            aria-label="Refresh data"
-            @click="reload"
-          >
-            <span :class="loading ? 'inline-block animate-spin' : ''">↻</span>
-            {{ loading ? 'Loading' : 'Refresh' }}
-          </button>
-        </div>
+  <div class="mx-auto min-h-screen max-w-xl border-x border-ink bg-paper pb-20 md:my-0">
+    <header class="sticky top-0 z-10 bg-paper pt-[env(safe-area-inset-top)]">
+      <div class="grid h-14 grid-cols-[3.5rem_1fr_3.5rem] border-b border-ink">
+        <button
+          type="button"
+          class="relative flex items-center justify-center border-r border-ink active:bg-paper-deep"
+          aria-label="Phone alert setup"
+          @click="setupOpen = true"
+        >
+          <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+          <span v-if="!configured" class="absolute right-3 top-3 h-2.5 w-2.5 border border-ink bg-brand" aria-hidden="true"></span>
+        </button>
+        <h1 class="flex items-center justify-center font-display text-xl font-bold uppercase tracking-[0.12em]">IPO Alert</h1>
+        <button
+          type="button"
+          class="flex items-center justify-center border-l border-ink active:bg-paper-deep disabled:opacity-50"
+          :disabled="loading"
+          aria-label="Refresh data"
+          @click="reload"
+        >
+          <svg viewBox="0 0 24 24" class="h-6 w-6" :class="loading ? 'animate-spin' : ''" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 4v5h-5" /></svg>
+        </button>
       </div>
-      <div class="mt-1">
-        <FilterTabs v-model="tab" :counts="counts" />
-      </div>
+      <FilterTabs v-model="tab" :counts="counts" />
     </header>
 
-    <main class="space-y-3 px-4 pt-4">
-      <div v-if="error" class="rounded-xl bg-amber-500/15 p-3 text-sm text-amber-200 ring-1 ring-amber-400/40" role="alert">
+    <section class="border-b border-ink bg-sun px-5 py-6 text-center">
+      <h2 class="font-display text-2xl font-bold leading-tight">Never miss an IPO.</h2>
+      <p class="mx-auto mt-2 max-w-xs text-xs">Foreign 10% and General Public issues, pushed to your phone the moment they are announced or open.</p>
+      <button
+        type="button"
+        class="mt-4 w-full border border-ink bg-paper px-4 py-3 text-sm font-bold active:bg-paper-deep"
+        @click="setupOpen = true"
+      >{{ configured ? 'Alert settings' : 'Set up phone alerts' }}</button>
+      <p class="mt-3 text-xs underline underline-offset-2">
+        <template v-if="updatedAt">Updated {{ fmtTime(updatedAt, JST) }} JST · {{ fmtTime(updatedAt, NPT) }} NPT</template>
+        <template v-else>Waiting for first data…</template>
+      </p>
+    </section>
+
+    <main class="space-y-4 px-4 pt-5">
+      <div v-if="error" class="border border-ink bg-sun p-3 text-xs" role="alert">
         <template v-if="fromCache">
           Can't reach the server ({{ error }}). Showing your last saved copy, so it may be out of date.
         </template>
         <template v-else>Couldn't load IPO data: {{ error }}.</template>
       </div>
 
-      <button
-        v-if="!configured"
-        type="button"
-        class="flex w-full items-center justify-between gap-3 rounded-xl bg-amber-400/15 p-3 text-left text-sm text-amber-100 ring-1 ring-amber-400/40 active:bg-amber-400/25"
-        @click="setupOpen = true"
-      >
-        <span><strong>Set up phone alerts</strong><span class="block text-xs text-amber-200/80">Get notified the moment an eligible IPO is announced or opens.</span></span>
-        <span aria-hidden="true">→</span>
-      </button>
-
-      <div v-if="isStale" class="rounded-xl bg-rose-500/15 p-3 text-sm text-rose-200 ring-1 ring-rose-400/40" role="alert">
+      <div v-if="isStale" class="border border-ink bg-brand p-3 text-xs font-bold" role="alert">
         Data is {{ Math.floor(dataAge ?? 0) }} hours old, so the scraper may be failing and alerts may be delayed.
         Check
         <a :href="MERO_SHARE_URL" target="_blank" rel="noopener noreferrer" class="underline">MeroShare</a>
         directly.
       </div>
 
-      <div v-if="unverified.length" class="rounded-xl bg-orange-500/15 p-3 text-sm text-orange-200 ring-1 ring-orange-400/40" role="alert">
-        <p class="font-semibold">{{ unverified.length }} announcement(s) not yet confirmed in the main feed</p>
+      <div v-if="unverified.length" class="border border-ink bg-sun p-3 text-xs" role="alert">
+        <p class="font-bold">{{ unverified.length }} announcement(s) not yet confirmed in the main feed</p>
         <ul class="mt-1 list-disc space-y-1 pl-5">
           <li v-for="m in unverified" :key="m.text">
             {{ m.text }}
@@ -144,28 +135,28 @@ const hasActiveInView = computed(() => visible.value.some((i) => liveStatus(i, n
         </ul>
       </div>
 
-      <p v-if="!feed && loading" class="py-16 text-center text-slate-400">Loading IPOs…</p>
+      <p v-if="!feed && loading" class="py-16 text-center text-ink-soft">Loading IPOs…</p>
 
       <template v-else-if="feed">
         <IpoCard v-for="ipo in visible" :key="ipo.id" :ipo="ipo" />
 
-        <div v-if="!hasActiveInView" class="rounded-2xl bg-slate-900 p-6 text-center ring-1 ring-slate-700">
-          <p class="text-base font-semibold text-white">Nothing open or upcoming here</p>
-          <p class="mt-1 text-sm text-slate-400">
+        <div v-if="!hasActiveInView" class="border border-ink p-6 text-center">
+          <p class="font-display text-lg font-bold">Nothing open or upcoming here</p>
+          <p class="mt-1 text-xs text-ink-soft">
             You'll get a phone alert the moment a matching IPO is announced.
           </p>
         </div>
       </template>
 
-      <label class="flex items-center gap-3 rounded-xl bg-slate-900 p-3 text-sm text-slate-300 ring-1 ring-slate-800">
-        <input v-model="showOther" type="checkbox" class="h-5 w-5 accent-sky-400" />
+      <label class="flex items-start gap-3 border border-ink p-3 text-xs">
+        <input v-model="showOther" type="checkbox" class="mt-0.5 h-5 w-5 shrink-0 accent-[#f26b21]" />
         <span>
-          Also show other issues
-          <span class="block text-xs text-slate-500">Mutual funds, local-resident IPOs, right shares, debentures. No alerts are sent for these.</span>
+          <span class="font-bold">Also show other issues</span>
+          <span class="block text-ink-soft">Mutual funds, local-resident IPOs, right shares, debentures. No alerts are sent for these.</span>
         </span>
       </label>
 
-      <p class="pt-2 text-center text-xs text-slate-500">
+      <p class="pt-2 text-center text-[11px] text-ink-soft">
         Data from ShareSansar, cross-checked with MeroLagani. Always confirm on MeroShare before applying.
       </p>
     </main>

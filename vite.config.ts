@@ -27,8 +27,8 @@ export default defineConfig({
         scope: base,
         display: 'standalone',
         orientation: 'portrait',
-        theme_color: '#020617',
-        background_color: '#020617',
+        theme_color: '#fbefd6',
+        background_color: '#fbefd6',
         categories: ['finance', 'utilities'],
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
@@ -39,7 +39,7 @@ export default defineConfig({
       workbox: {
         // App shell is precached (works fully offline). The IPO data is deliberately NOT
         // precached: a precached copy would be frozen at build time.
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
         navigateFallback: `${base}index.html`,
         cleanupOutdatedCaches: true,
         // First install takes control of the already-open page, so the data cache and offline
